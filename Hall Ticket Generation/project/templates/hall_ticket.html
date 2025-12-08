@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hall Ticket - Apr 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12px;
+            padding: 20px 35px;
+            background: white;
+            color: black;
+            line-height: 1.35;
+        }
+
+        .container {
+            width: 780px;
+            min-height: calc(100% - 40px);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1 1 auto;
+            padding-bottom: 30px;
+        }
+
+        .logo {
+            width: 70px;
+            height: 80px;
+            float: left;
+            margin-right: 15px;
+            border: 1px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+            outline: none;
+        }
+
+        .college-name {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .college-place {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .autonomous {
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .office {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        /* Student Info Box */
+        .info-box {
+            border: 1.5px solid black;
+            position: relative;
+            padding: 6px 120px 6px 6px;
+            margin: 12px 0;
+            min-height: 125px;
+        }
+
+        .photo {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 85px;
+            height: 105px;
+            border: 1px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+        }
+
+        .info-table td {
+            border: 1px solid black;
+            padding: 4px 6px;
+        }
+
+        .info-row-split td {
+            width: 25%;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        /* Subjects Table */
+        .subjects-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            font-size: 11.5px;
+        }
+
+        .subjects-table th,
+        .subjects-table td {
+            border: 1px solid black;
+            padding: 5px 6px;
+            text-align: left;
+        }
+
+        .subjects-table .center {
+            text-align: center;
+        }
+
+        .total {
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Signature Area */
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: auto;
+        }
+
+        .signature-table td {
+            text-align: center;
+            font-size: 11px;
+            padding-top: 60px;
+        }
+
+        .sig-line {
+            width: 70%;
+            margin: 0 auto 6px auto;
+            border-top: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">LOGO</div>
+            <div class="college-name">SRI SHAKTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY</div>
+            <div class="college-place">COIMBATORE – 62</div>
+            <div class="autonomous">[An Autonomous Institution]</div>
+            <div class="office">OFFICE OF THE CONTROLLER OF EXAMINATIONS</div>
+            <div class="title">HALL TICKET<br>END SEMESTER EXAMINATIONS – APR 2025</div>
+        </div>
+
+        <!-- Student Info Box -->
+        <div class="info-box">
+            <div class="photo">Photo</div>
+
+        <table class="info-table">
+            <tr>
+                <td class="info-label">Name:</td>
+                <td colspan="2">{{ student.name }}</td>
+                <td class="info-label">Register Number:</td>
+                <td colspan="2">{{ student.reg_no }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Degree & Branch:</td>
+                <td colspan="5">B.Tech . {{ branch }}</td>
+            </tr>
+            <tr class="info-row-split">
+                <td class="info-label">Date of Birth:</td>
+                <td>{{ student.dob }}</td>
+                <td class="info-label">Semester:</td>
+                <td>{{ semester }}</td>
+                <td class="info-label">Gender:</td>
+                <td>{{ gender }}</td>
+            </tr>
+            <tr>
+                <td class="info-label">Regulation:</td>
+                <td colspan="5">{{ regulation }}</td>
+            </tr>
+        </table>
+        </div>
+
+        <!-- Subjects Table -->
+        <table class="subjects-table">
+        <thead>
+            <tr>
+                <th class="center">Sem</th>
+                <th class="center">Date</th>
+                <th class="center">Session</th>
+                <th class="center">Subject Code</th>
+                <th>Subject Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in subjects %}
+            <tr>
+                <td class="center">{{ sub.sem }}</td>
+                <td class="center">{{ sub.date if sub.date else "" }}</td>
+                <td class="center">{{ sub.session if sub.session else "" }}</td>
+                <td class="center">{{ sub.code }}</td>
+                <td>{{ sub.name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+
+        <div class="total">Total Number of Subjects Registered: {{ subjects|length }}</div>
+    </div>
+   
+    <table class="signature-table" style="margin-top: auto;">
+        <tr>
+            <td>
+                <div class="sig-line"></div>
+                <div>Candidate Signature</div>
+            </td>
+            <td>
+                <div class="sig-line"></div>
+                <div>Controller of Examinations</div>
+            </td>
+            <td>
+                <div class="sig-line"></div>
+                <div>Principal</div>
+            </td>
+        </tr>
+    </table>
+    
+</div>
+
+</body>
+</html>

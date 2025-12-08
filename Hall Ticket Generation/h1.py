@@ -70,23 +70,34 @@ def make_mock_participants(n: int = 10) -> List[Dict]:
 
 
 def draw_header(c: canvas.Canvas, width: float, height: float):
-	"""Structured header similar to the provided hall ticket format."""
-	top = height - 20 * mm
+	"""Header with logo placeholder and institution details."""
+	top = height - 15 * mm
+	left = 20 * mm
+	
 	c.setFillColor(colors.black)
 	c.setStrokeColor(colors.black)
-	c.setLineWidth(1.2)
-
-	c.setFont("Helvetica-Bold", 16)
-	c.drawCentredString(width / 2, top, "SRI SHAKTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY")
+	c.setLineWidth(1)
+	
+	# Logo placeholder box on left
+	logo_size = 28 * mm
+	c.rect(left, top - logo_size, logo_size, logo_size)
+	c.setFont("Helvetica", 8)
+	c.drawCentredString(left + logo_size/2, top - logo_size/2, "LOGO")
+	
+	# Institution name and details (centered)
+	header_x = width / 2
+	c.setFont("Helvetica-Bold", 14)
+	c.drawCentredString(header_x, top - 5 * mm, "SRI SHAKTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY")
+	c.setFont("Helvetica", 9)
+	c.drawCentredString(header_x, top - 10 * mm, "COIMBATORE - R2")
+	c.setFont("Helvetica", 8)
+	c.drawCentredString(header_x, top - 14 * mm, "[An Autonomous Institution]")
+	c.setFont("Helvetica-Bold", 11)
+	c.drawCentredString(header_x, top - 20 * mm, "OFFICE OF THE CONTROLLER OF EXAMINATIONS")
+	c.setFont("Helvetica-Bold", 12)
+	c.drawCentredString(header_x, top - 26 * mm, "HALL TICKET")
 	c.setFont("Helvetica", 10)
-	c.drawCentredString(width / 2, top - 6 * mm, "COIMBATORE - R2   [An Autonomous Institution]")
-	c.setFont("Helvetica-Bold", 12)
-	c.drawCentredString(width / 2, top - 13 * mm, "OFFICE OF THE CONTROLLER OF EXAMINATIONS")
-	c.setFont("Helvetica-Bold", 12)
-	c.drawCentredString(width / 2, top - 20 * mm, "HALL TICKET")
-	c.setFont("Helvetica", 11)
-	c.drawCentredString(width / 2, top - 26 * mm, "END SEMESTER EXAMINATIONS - APR 2025")
-	c.line(15 * mm, top - 30 * mm, width - 15 * mm, top - 30 * mm)
+	c.drawCentredString(header_x, top - 31 * mm, "END SEMESTER EXAMINATIONS - APR 2025")
 
 
 def draw_footer(c: canvas.Canvas, width: float):
@@ -104,118 +115,141 @@ def render_hall_ticket(p: Dict, out_path: str):
 	# Header
 	draw_header(c, width, height)
 
-	# Candidate detail grid and photo placeholder
-	left = 15 * mm
-	right = width - 15 * mm
-	y = height - 80 * mm
-	row_h = 10 * mm
-
-	# Photo box on the right
+	# Main info box with border
+	left = 20 * mm
+	right = width - 20 * mm
+	box_top = height - 55 * mm
+	box_height = 28 * mm
+	
+	c.setStrokeColor(colors.black)
+	c.setLineWidth(1.2)
+	c.rect(left, box_top - box_height, right - left, box_height)
+	
+	# Photo box in top right corner of info box
 	photo_w = 25 * mm
-	photo_h = 30 * mm
-	c.rect(right - photo_w, y - photo_h + 5 * mm, photo_w, photo_h)
+	photo_h = 28 * mm
+	c.rect(right - photo_w, box_top - box_height, photo_w, photo_h)
 	c.setFont("Helvetica", 8)
-	c.drawCentredString(right - photo_w/2, y - photo_h/2 + 5 * mm, "Photo")
-
-	# Name
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Name:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 30 * mm, y, p["name"])
-	# Register Number
-	y -= row_h
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Register Number:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 30 * mm, y, p["reg_id"])
-	# Degree & Branch
-	y -= row_h
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Degree & Branch:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 30 * mm, y, "B.Tech . ARTIFICIAL INTELLIGENCE AND DATA SCIENCE")
-	# DOB, Semester
-	y -= row_h
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Date of Birth:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 30 * mm, y, "")
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left + 85 * mm, y, "Semester:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 115 * mm, y, "")
-	# Gender, Regulation
-	y -= row_h
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Gender:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 30 * mm, y, "")
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left + 85 * mm, y, "Regulation:")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 115 * mm, y, "")
-
-	# Schedule table header
-	y -= 15 * mm
-	c.setFont("Helvetica-Bold", 11)
-	c.drawString(left, y, "Sem")
-	c.drawString(left + 12 * mm, y, "Date")
-	c.drawString(left + 45 * mm, y, "Session")
-	c.drawString(left + 70 * mm, y, "Subject Code")
-	c.drawString(left + 110 * mm, y, "Subject Name")
-	c.line(left, y - 2 * mm, right, y - 2 * mm)
-
-	# Placeholder rows
-	y -= 8 * mm
-	c.setFont("Helvetica", 10)
-	for _ in range(11):
-		c.setStrokeColor(colors.HexColor("#aaaaaa"))
-		c.line(left, y + 3 * mm, right, y + 3 * mm)
-		c.setStrokeColor(colors.black)
-		y -= 8 * mm
-
-	# Total subjects
-	y -= 5 * mm
-	c.setFont("Helvetica-Bold", 10)
-	c.drawString(left, y, "Total Number of Subjects Registered: ")
-	c.setFont("Helvetica", 10)
-	c.drawString(left + 80 * mm, y, "")
-
-	# Footer signatures and seal
-	y -= 25 * mm
-	sig_y = y
-	c.line(left, sig_y, left + 45 * mm, sig_y)
+	c.drawCentredString(right - photo_w/2, box_top - box_height/2, "Photo")
+	
+	# Info rows inside box
+	info_left = left + 3 * mm
+	y = box_top - 7 * mm
+	
+	# Row 1: Name and Register Number
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left, y, "Name:")
 	c.setFont("Helvetica", 9)
-	c.drawString(left, sig_y - 5 * mm, "Candidate Signature")
-	c.line(left + 60 * mm, sig_y, left + 105 * mm, sig_y)
-	c.drawString(left + 60 * mm, sig_y - 5 * mm, "Controller of Examinations")
-	c.line(left + 120 * mm, sig_y, left + 165 * mm, sig_y)
-	c.drawString(left + 120 * mm, sig_y - 5 * mm, "Principal")
-	seal_x = right - 25 * mm
-	seal_y = sig_y - 5 * mm
-	c.circle(seal_x, seal_y, 12 * mm)
+	c.drawString(info_left + 15 * mm, y, p["name"].upper())
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left + 95 * mm, y, "Register Number:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 135 * mm, y, p["reg_id"])
+	
+	# Row 2: Degree & Branch (full width)
+	y -= 7 * mm
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left, y, "Degree & Branch:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 30 * mm, y, "B.Tech . ARTIFICIAL INTELLIGENCE AND DATA SCIENCE")
+	
+	# Row 3: Date of Birth, Semester, Gender, Regulation
+	y -= 7 * mm
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left, y, "Date of Birth:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 25 * mm, y, "25.09.2005")
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left + 55 * mm, y, "Semester:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 72 * mm, y, "4")
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left + 85 * mm, y, "Gender:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 100 * mm, y, "MALE")
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(info_left + 120 * mm, y, "Regulation:")
+	c.setFont("Helvetica", 9)
+	c.drawString(info_left + 142 * mm, y, "2021")
+
+	# Exam schedule table
+	table_top = box_top - box_height - 8 * mm
+	table_left = left
+	table_width = right - left
+	row_height = 7 * mm
+	
+	# Table header with borders
+	c.setStrokeColor(colors.black)
+	c.setLineWidth(0.5)
+	y = table_top
+	
+	# Column widths
+	col_sem = 10 * mm
+	col_date = 25 * mm
+	col_session = 20 * mm
+	col_code = 25 * mm
+	col_name = table_width - col_sem - col_date - col_session - col_code
+	
+	# Header row
+	c.setFont("Helvetica-Bold", 9)
+	c.rect(table_left, y - row_height, col_sem, row_height)
+	c.drawString(table_left + 2 * mm, y - row_height + 2 * mm, "Sem")
+	
+	c.rect(table_left + col_sem, y - row_height, col_date, row_height)
+	c.drawString(table_left + col_sem + 2 * mm, y - row_height + 2 * mm, "Date")
+	
+	c.rect(table_left + col_sem + col_date, y - row_height, col_session, row_height)
+	c.drawString(table_left + col_sem + col_date + 2 * mm, y - row_height + 2 * mm, "Session")
+	
+	c.rect(table_left + col_sem + col_date + col_session, y - row_height, col_code, row_height)
+	c.drawString(table_left + col_sem + col_date + col_session + 2 * mm, y - row_height + 2 * mm, "Subject Code")
+	
+	c.rect(table_left + col_sem + col_date + col_session + col_code, y - row_height, col_name, row_height)
+	c.drawString(table_left + col_sem + col_date + col_session + col_code + 2 * mm, y - row_height + 2 * mm, "Subject Name")
+	
+	# Data rows (11 empty rows)
+	y -= row_height
+	c.setFont("Helvetica", 9)
+	for i in range(11):
+		c.rect(table_left, y - row_height, col_sem, row_height)
+		c.rect(table_left + col_sem, y - row_height, col_date, row_height)
+		c.rect(table_left + col_sem + col_date, y - row_height, col_session, row_height)
+		c.rect(table_left + col_sem + col_date + col_session, y - row_height, col_code, row_height)
+		c.rect(table_left + col_sem + col_date + col_session + col_code, y - row_height, col_name, row_height)
+		y -= row_height
+	
+	# Total subjects registered
+	y -= 5 * mm
+	c.setFont("Helvetica-Bold", 9)
+	c.drawString(table_left, y, "Total Number of Subjects Registered: 11")
+
+	# Signatures at bottom
+	y -= 30 * mm
+	sig_y = y
+	
+	# Candidate signature line
+	c.setLineWidth(0.5)
+	c.line(table_left, sig_y, table_left + 40 * mm, sig_y)
+	c.setFont("Helvetica", 8)
+	c.drawString(table_left, sig_y - 4 * mm, "Candidate Signature")
+	
+	# Controller signature line
+	controller_x = table_left + 65 * mm
+	c.line(controller_x, sig_y, controller_x + 40 * mm, sig_y)
+	c.drawString(controller_x, sig_y - 4 * mm, "Controller of Examinations")
+	
+	# Principal signature line  
+	principal_x = controller_x + 60 * mm
+	c.line(principal_x, sig_y, principal_x + 30 * mm, sig_y)
+	c.drawString(principal_x, sig_y - 4 * mm, "Principal")
+	
+	# Seal circle on bottom right
+	seal_x = right - 20 * mm
+	seal_y = sig_y - 10 * mm
+	c.setLineWidth(1)
+	c.circle(seal_x, seal_y, 15 * mm)
 	c.setFont("Helvetica", 8)
 	c.drawCentredString(seal_x, seal_y, "SEAL")
-
-	# No QR on the hall ticket; portal will display QR separately for download
-
-	# Instruction note (centered under header area)
-	styles = getSampleStyleSheet()
-	style = styles["Normal"]
-	style.fontName = "Helvetica"
-	style.fontSize = 9
-	style.leading = 12
-	text = (
-		"Carry a valid ID card. Be present at least 15 minutes before the session. "
-		"Electronic gadgets are strictly prohibited inside the exam hall."
-	)
-	para = Paragraph(text, style)
-	para.wrapOn(c, width - 30 * mm, 30 * mm)
-	para.drawOn(c, 15 * mm, height - 98 * mm)
-	
-
-	# Footer
-	draw_footer(c, width)
 
 	c.showPage()
 	c.save()
