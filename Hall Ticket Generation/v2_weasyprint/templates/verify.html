@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hall Ticket Verification - {{ reg_no }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .verified-icon {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+            animation: checkmark 0.6s ease-out;
+        }
+        
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        h1 {
+            color: #28a745;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        
+        .info-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .info-value {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+            text-align: right;
+        }
+        
+        .college-name {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        .college-name h2 {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .college-name p {
+            color: #999;
+            font-size: 13px;
+        }
+        
+        .disclaimer {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="verified-icon">✓</div>
+        <h1>Hall Ticket Verified</h1>
+        
+        <div class="status-badge">✓ Valid Hall Ticket</div>
+        
+        <div class="info-card">
+            <div class="info-row">
+                <span class="info-label">Register Number:</span>
+                <span class="info-value">{{ reg_no }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Student Name:</span>
+                <span class="info-value">{{ name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Department:</span>
+                <span class="info-value">{{ branch }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Degree:</span>
+                <span class="info-value">{{ degree }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Semester:</span>
+                <span class="info-value">{{ semester }}</span>
+            </div>
+        </div>
+        
+        <div class="college-name">
+            <h2>Marri Laxman Reddy Institute of Technology</h2>
+            <p>Hyderabad - 43 | An Autonomous Institution</p>
+        </div>
+        
+        <div class="disclaimer">
+            <strong>⚠️ Notice:</strong> This is a mock verification portal created for demonstration purposes only. 
+            In a production environment, this page would connect to the official college database and display 
+            real-time authentication details including photo verification, examination schedule, and hall allocation.
+        </div>
+    </div>
+</body>
+</html>
