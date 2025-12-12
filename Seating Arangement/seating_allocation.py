@@ -25,7 +25,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
 class SeatingAllocationSystem:
-    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1):
+    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1, internal_number=1):
         """Initialize the seating allocation system"""
         # Read halls data with columns information
         self.halls_df = pd.read_csv(halls_file)
@@ -46,6 +46,7 @@ class SeatingAllocationSystem:
         self.session = session  # 'FN' or 'AN'
         self.exam_type = exam_type  # 'Internal' or 'SEM'
         self.year = year  # Academic year (1, 2, 3, or 4)
+        self.internal_number = internal_number  # 1 or 2 (only for Internal exams)
         self.generation_date = datetime.now().strftime('%Y-%m-%d')
         
     def allocate_seats_mixed_department(self):
@@ -496,7 +497,11 @@ class SeatingAllocationSystem:
                 ha='center', fontsize=9, style='italic')
         
         # Add exam type to title
-        exam_type_text = 'Continuous Internal Assessment - I' if self.exam_type == 'Internal' else 'End Semester Examination'
+        if self.exam_type == 'Internal':
+            roman_numeral = 'I' if self.internal_number == 1 else 'II'
+            exam_type_text = f'Continuous Internal Assessment - {roman_numeral}'
+        else:
+            exam_type_text = 'End Semester Examination'
         fig.text(0.5, 0.87, f'SEATING ARRANGEMENT ({exam_type_text})',
                 ha='center', fontsize=14, fontweight='bold')
         
@@ -504,7 +509,10 @@ class SeatingAllocationSystem:
         from datetime import date
         today = date.today().strftime('%d-%m-%Y')
         fig.text(0.1, 0.82, f'Date:{today}', fontsize=10)
-        fig.text(0.5, 0.82, f'Session:{self.session}', ha='center', fontsize=10)
+        if self.exam_type == 'Internal':
+            fig.text(0.5, 0.82, f'Session: Morning', ha='center', fontsize=10)
+        else:
+            fig.text(0.5, 0.82, f'Session:{self.session}', ha='center', fontsize=10)
         fig.text(0.9, 0.82, f'Hall:{hall_no}', ha='right', fontsize=10)
         
         # Create column headers
@@ -524,8 +532,8 @@ class SeatingAllocationSystem:
                 for cell in row:
                     if isinstance(cell, dict):
                         # Format as "Left | Right" with vertical separator
-                        left = cell.get('left', 'EMPTY')
-                        right = cell.get('right', 'EMPTY')
+                        left = cell.get('left', '-')
+                        right = cell.get('right', '-')
                         cell_text = f"{left} | {right}"
                         row_data.append(cell_text)
                     else:
@@ -557,8 +565,8 @@ class SeatingAllocationSystem:
             
             # Style empty cells
             cell_text = cell.get_text().get_text()
-            if "EMPTY" in cell_text:
-                cell.set_text_props(color='lightgray', style='italic')
+            if "-" in cell_text:
+                cell.set_text_props(color='black')
         
         # Add department breakdown table at bottom
         dept_data = [[dept, count] for dept, count in dept_counts.items()]
@@ -590,7 +598,10 @@ class SeatingAllocationSystem:
     def generate_student_pdf(self, output_file=None):
         """Generate student PDF with hall layouts (skip empty halls)"""
         if output_file is None:
-            output_file = f'seating_student_{self.generation_date}_{self.session}_{self.exam_type}.pdf'
+            if self.exam_type == 'Internal':
+                output_file = f'seating_student_{self.generation_date}_Y{self.year}_I{self.internal_number}.pdf'
+            else:
+                output_file = f'seating_student_{self.generation_date}_Y{self.year}_SEM_{self.session}.pdf'
         
         print("\n" + "=" * 60)
         print("GENERATING STUDENT PDF")
@@ -619,7 +630,10 @@ class SeatingAllocationSystem:
     def generate_faculty_pdf(self, output_file=None):
         """Generate faculty PDF with summary table"""
         if output_file is None:
-            output_file = f'seating_faculty_{self.generation_date}_{self.session}_{self.exam_type}.pdf'
+            if self.exam_type == 'Internal':
+                output_file = f'seating_faculty_{self.generation_date}_Year{self.year}_Internal{self.internal_number}.pdf'
+            else:
+                output_file = f'seating_faculty_{self.generation_date}_Year{self.year}_SEM_{self.session}.pdf'
         
         print("\n" + "=" * 60)
         print("GENERATING FACULTY PDF")
@@ -681,14 +695,12 @@ class SeatingAllocationSystem:
         halls_used = len(self.hall_wise_allocations)
         total_capacity = sum([self.halls_df[self.halls_df['hallno'] == h]['capacity'].values[0] 
                              for h in self.hall_wise_allocations.keys()])
-        utilization = (total_students / total_capacity * 100) if total_capacity > 0 else 0
         
         stats_data = [
             ['Overall Statistics', ''],
             ['Total Students', str(total_students)],
             ['Total Halls Used', f"{halls_used} / {len(self.halls_df)}"],
-            ['Total Capacity', str(total_capacity)],
-            ['Utilization', f"{utilization:.1f}%"]
+            ['Total Capacity', str(total_capacity)]
         ]
         
         stats_table = Table(stats_data, colWidths=[3*inch, 2*inch])
@@ -943,16 +955,31 @@ def main():
     else:
         exam_type = 'Internal' if exam_type_input == 'INTERNAL' else 'SEM'
     
-    # Get session from user (default to FN)
-    session = input("Enter session (FN/AN) [default: FN]: ").strip().upper()
-    if session not in ['FN', 'AN']:
-        session = 'FN'
+    # Get internal exam number if Internal exam is selected
+    internal_number = 1
+    session = 'FN'  # Default session
+    
+    if exam_type == 'Internal':
+        internal_input = input("\nWhich Internal Exam? (1/2) [default: 1]: ").strip()
+        if internal_input in ['1', '2']:
+            internal_number = int(internal_input)
+        else:
+            internal_number = 1
+        print(f"✓ Selected: Internal {internal_number} (Morning session)")
+    else:
+        # Get session only for SEM exams
+        session = input("\nEnter session (FN/AN) [default: FN]: ").strip().upper()
+        if session not in ['FN', 'AN']:
+            session = 'FN'
     
     # Create allocation system
     system = SeatingAllocationSystem(halls_file, students_file, teachers_file, 
-                                     session=session, exam_type=exam_type, year=year)
+                                     session=session, exam_type=exam_type, year=year, internal_number=internal_number)
     
-    print(f"\nGenerating seating arrangement for Year {year} - {exam_type} Exam ({session} session)...")
+    if exam_type == 'Internal':
+        print(f"\nGenerating seating arrangement for Year {year} - Internal {internal_number} Exam...")
+    else:
+        print(f"\nGenerating seating arrangement for Year {year} - {exam_type} Exam ({session} session)...")
     if exam_type == 'Internal':
         print("Mode: 2 students per bench (randomized, min 2 depts/hall)")
     else:
@@ -975,8 +1002,11 @@ def main():
     print("ALLOCATION COMPLETE!")
     print("=" * 60)
     print(f"\nYear: {year_names[year]} Year")
-    print(f"Exam Type: {exam_type}")
-    print(f"Session: {session}")
+    if exam_type == 'Internal':
+        print(f"Exam Type: Internal {internal_number} (Morning session)")
+    else:
+        print(f"Exam Type: {exam_type}")
+        print(f"Session: {session}")
     print(f"\nGenerated Files:")
     print(f"  1. Student PDF: {student_pdf}")
     print(f"  2. Faculty PDF: {faculty_pdf}")
