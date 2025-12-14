@@ -40,6 +40,7 @@ def create_database():
         department TEXT NOT NULL,
         year INTEGER NOT NULL,
         semester INTEGER NOT NULL,
+        semester_type TEXT NOT NULL,
         subject_type TEXT NOT NULL,
         exam_type TEXT NOT NULL,
         credits INTEGER,
@@ -123,41 +124,63 @@ def populate_mock_data(conn):
     VALUES (?, ?, ?, ?, ?)
     ''', students_data)
     
-    # Insert mock subjects for Year 2, Semester 3
+    # Insert mock subjects for Year 2 - ODD and EVEN semesters
     subjects_data = [
-        # CSE Subjects
-        ('CS301', 'Data Structures', 'CSE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('CS302', 'Computer Organization', 'CSE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('CS303', 'Discrete Mathematics', 'CSE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('CS304', 'Operating Systems', 'CSE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('CS305', 'Database Systems', 'CSE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('CS306', 'Software Engineering', 'CSE', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('CS307', 'Web Technologies', 'CSE', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('CS308', 'Computer Networks Lab', 'CSE', 2, 3, 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        # CSE ODD Semester (Semester 3) Subjects
+        ('CS301', 'Data Structures', 'CSE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS303', 'Computer Organization', 'CSE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS305', 'Discrete Mathematics', 'CSE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS307', 'Operating Systems', 'CSE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS309', 'Software Engineering', 'CSE', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('CS311', 'Web Technologies', 'CSE', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('CS313', 'Computer Networks Lab', 'CSE', 2, 3, 'ODD', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
         
-        # ECE Subjects
-        ('EC301', 'Signals and Systems', 'ECE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('EC302', 'Digital Electronics', 'ECE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('EC303', 'Electronic Devices', 'ECE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('EC304', 'Control Systems', 'ECE', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('EC305', 'Communication Systems', 'ECE', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('EC306', 'Microprocessors', 'ECE', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('EC307', 'Circuit Simulation Lab', 'ECE', 2, 3, 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        # CSE EVEN Semester (Semester 4) Subjects
+        ('CS302', 'Database Systems', 'CSE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS304', 'Computer Networks', 'CSE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS306', 'Design and Analysis of Algorithms', 'CSE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS308', 'Theory of Computation', 'CSE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('CS310', 'Microprocessors', 'CSE', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('CS312', 'Data Analytics', 'CSE', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('CS314', 'Database Lab', 'CSE', 2, 4, 'EVEN', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
         
-        # MECH Subjects
-        ('ME301', 'Thermodynamics', 'MECH', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('ME302', 'Fluid Mechanics', 'MECH', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('ME303', 'Machine Design', 'MECH', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('ME304', 'Manufacturing Processes', 'MECH', 2, 3, 'HEAVY', 'BOTH', 4, 3.0, 20),
-        ('ME305', 'Material Science', 'MECH', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('ME306', 'Engineering Drawing', 'MECH', 2, 3, 'NONMAJOR', 'BOTH', 3, 3.0, 20),
-        ('ME307', 'Workshop Practice', 'MECH', 2, 3, 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        # ECE ODD Semester (Semester 3) Subjects
+        ('EC301', 'Signals and Systems', 'ECE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC303', 'Digital Electronics', 'ECE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC305', 'Electronic Devices', 'ECE', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC307', 'Communication Systems', 'ECE', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('EC309', 'Microprocessors', 'ECE', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('EC311', 'Circuit Lab', 'ECE', 2, 3, 'ODD', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        
+        # ECE EVEN Semester (Semester 4) Subjects
+        ('EC302', 'Control Systems', 'ECE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC304', 'Electromagnetic Theory', 'ECE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC306', 'Digital Signal Processing', 'ECE', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('EC308', 'VLSI Design', 'ECE', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('EC310', 'Embedded Systems', 'ECE', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('EC312', 'Communication Lab', 'ECE', 2, 4, 'EVEN', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        
+        # MECH ODD Semester (Semester 3) Subjects
+        ('ME301', 'Thermodynamics', 'MECH', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME303', 'Fluid Mechanics', 'MECH', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME305', 'Machine Design', 'MECH', 2, 3, 'ODD', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME307', 'Material Science', 'MECH', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('ME309', 'Engineering Drawing', 'MECH', 2, 3, 'ODD', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('ME311', 'Workshop Practice', 'MECH', 2, 3, 'ODD', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
+        
+        # MECH EVEN Semester (Semester 4) Subjects
+        ('ME302', 'Manufacturing Processes', 'MECH', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME304', 'Heat Transfer', 'MECH', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME306', 'Mechanics of Materials', 'MECH', 2, 4, 'EVEN', 'HEAVY', 'BOTH', 4, 3.0, 20),
+        ('ME308', 'Industrial Engineering', 'MECH', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('ME310', 'CAD/CAM', 'MECH', 2, 4, 'EVEN', 'NONMAJOR', 'BOTH', 3, 3.0, 20),
+        ('ME312', 'Manufacturing Lab', 'MECH', 2, 4, 'EVEN', 'NONMAJOR', 'INTERNAL', 2, 1.5, 20),
     ]
     
     cursor.executemany('''
     INSERT INTO subjects (subject_code, subject_name, department, year, semester, 
-                         subject_type, exam_type, credits, duration, student_count)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         semester_type, subject_type, exam_type, credits, duration, student_count)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', subjects_data)
     
     conn.commit()
@@ -179,20 +202,26 @@ def print_database_summary(conn):
     for dept, count in cursor.fetchall():
         print(f"   {dept}: {count} students")
     
-    # Subjects summary
+    # Subjects summary by semester type
     cursor.execute('''
-    SELECT department, subject_type, COUNT(*) 
+    SELECT semester_type, department, subject_type, COUNT(*) 
     FROM subjects 
     WHERE exam_type IN ('SEMESTER', 'BOTH')
-    GROUP BY department, subject_type
+    GROUP BY semester_type, department, subject_type
+    ORDER BY semester_type, department, subject_type
     ''')
     print("\n📖 Semester Exam Subjects:")
+    current_sem = None
     current_dept = None
-    for dept, stype, count in cursor.fetchall():
+    for sem_type, dept, stype, count in cursor.fetchall():
+        if sem_type != current_sem:
+            print(f"\n   {sem_type} SEMESTER:")
+            current_sem = sem_type
+            current_dept = None
         if dept != current_dept:
-            print(f"   {dept}:")
+            print(f"      {dept}:")
             current_dept = dept
-        print(f"      {stype}: {count} subjects")
+        print(f"         {stype}: {count} subjects")
     
     cursor.execute('''
     SELECT department, COUNT(*) 

@@ -5,6 +5,7 @@ Automated exam timetable generation system with constraint handling for college 
 ## Features
 
 - **Two Exam Types**: Semester (3 hours) and Internal (1.5 hours)
+- **Semester Selection**: Supports odd and even semester scheduling separately
 - **Constraint-Based Scheduling**: Handles gap requirements between exams
 - **Department-wise Scheduling**: Independent scheduling per department
 - **Conflict Detection**: Prevents same department students from having concurrent exams
@@ -15,7 +16,7 @@ Automated exam timetable generation system with constraint handling for college 
 
 ### Tables:
 1. **students** - Student information
-2. **subjects** - Subject details with classification (HEAVY/NONMAJOR)
+2. **subjects** - Subject details with classification (HEAVY/NONMAJOR) and semester type (ODD/EVEN)
 3. **exam_cycles** - Exam scheduling sessions
 4. **exam_schedule** - Generated timetables
 5. **holidays** - Holiday exclusions
@@ -59,9 +60,10 @@ python main.py
 
 Follow the prompts to:
 1. Select exam type (Semester/Internal)
-2. Choose year group (1-4)
-3. Enter date range
-4. Specify holidays to exclude
+2. Select semester type (Odd/Even)
+3. Choose year group (1-4)
+4. Enter date range
+5. Specify holidays to exclude
 
 ## Algorithm Logic
 
@@ -97,10 +99,15 @@ Follow the prompts to:
 ## Mock Data
 
 ### Departments: CSE, ECE, MECH
-### Year: 2 (Second Year)
-### Subjects per Department:
-- **CSE**: 8 subjects (5 HEAVY, 3 NONMAJOR)
-- **ECE**: 7 subjects (4 HEAVY, 3 NONMAJOR)
+### Year: 2 (Second Year) (ODD Semester - Semester 3):
+- **CSE**: 6 subjects (4 HEAVY, 2 NONMAJOR)
+- **ECE**: 5 subjects (3 HEAVY, 2 NONMAJOR)
+- **MECH**: 5 subjects (3 HEAVY, 2 NONMAJOR)
+
+### Subjects per Department (EVEN Semester - Semester 4):
+- **CSE**: 6 subjects (4 HEAVY, 2 NONMAJOR)
+- **ECE**: 5 subjects (3 HEAVY, 2 NONMAJOR)
+- **MECH**: 5 subjects (3 HEAVY, 2NONMAJOR)
 - **MECH**: 7 subjects (4 HEAVY, 3 NONMAJOR)
 
 ### Students: 20 per department (60 total)
@@ -140,21 +147,34 @@ Professional formatted timetable with institutional format:
 - Filename format: `exam_schedule_[type]_year[X]_[timestamp].pdf`
 
 ## Sample Output
-
-```
-======================================================================
-  SEMESTER EXAM SCHEDULE - Year 2
-======================================================================
-
-   Total Exams Scheduled: 19
-   Constraint Violations: 10
+6
+   Constraint Violations: 7
 
 ----------------------------------------------------------------------
 Date            Session    Dept     Code       Subject                  
 ----------------------------------------------------------------------
-16.12.2025      FN         CSE      CS306      Software Engineering         
-16.12.2025      FN         ECE      EC305      Communication Systems     
-16.12.2025      FN         MECH     ME305      Material Science          
+16.12.2025      FN         CSE      CS309      Software Engineering         
+16.12.2025      FN         ECE      EC307      Communication Systems     
+16.12.2025      FN         MECH     ME307      Material Science          
+17.12.2025      FN         CSE      CS311      Web Technologies
+18.12.2025      FN         CSE      CS301      Data Structures
+----------------------------------------------------------------------
+
+📄 Generating PDF...
+   ✅ PDF saved: exam_schedule_semester_year2_20251214_115414.pdf
+```
+
+## Example: ODD vs EVEN Semester Scheduling
+
+### ODD Semester (Semester 3) - Sample Subjects:
+- **CSE**: Data Structures, Computer Organization, Discrete Mathematics, Operating Systems, Software Engineering, Web Technologies
+- **ECE**: Signals and Systems, Digital Electronics, Electronic Devices, Communication Systems, Microprocessors
+- **MECH**: Thermodynamics, Fluid Mechanics, Machine Design, Material Science, Engineering Drawing
+
+### EVEN Semester (Semester 4) - Sample Subjects:
+- **CSE**: Database Systems, Computer Networks, Design and Analysis of Algorithms, Theory of Computation, Microprocessors, Data Analytics
+- **ECE**: Control Systems, Electromagnetic Theory, Digital Signal Processing, VLSI Design, Embedded Systems
+- **MECH**: Manufacturing Processes, Heat Transfer, Mechanics of Materials, Industrial Engineering, CAD/CAM12.2025      FN         MECH     ME305      Material Science          
 17.12.2025      FN         CSE      CS307      Web Technologies
 ----------------------------------------------------------------------
 

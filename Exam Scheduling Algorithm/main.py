@@ -101,8 +101,24 @@ def get_user_input():
         else:
             print("   Invalid choice. Please enter 1 or 2.")
     
+    # Semester type (Odd/Even)
+    print("\n2. Select Semester Type:")
+    print("   [1] Odd Semester (1, 3, 5, 7)")
+    print("   [2] Even Semester (2, 4, 6, 8)")
+    
+    while True:
+        choice = input("\n   Enter choice (1/2): ").strip()
+        if choice == '1':
+            semester_type = 'ODD'
+            break
+        elif choice == '2':
+            semester_type = 'EVEN'
+            break
+        else:
+            print("   Invalid choice. Please enter 1 or 2.")
+    
     # Year group
-    print("\n2. Select Year Group:")
+    print("\n3. Select Year Group:")
     print("   [1] First Year")
     print("   [2] Second Year")
     print("   [3] Third Year")
@@ -117,7 +133,7 @@ def get_user_input():
             print("   Invalid choice. Please enter 1-4.")
     
     # Date range
-    print("\n3. Enter Exam Period:")
+    print("\n4. Enter Exam Period:")
     
     while True:
         start_date = input("   Start Date (DD.MM.YYYY): ").strip()
@@ -140,7 +156,7 @@ def get_user_input():
             print("   Invalid format. Please use DD.MM.YYYY")
     
     # Holidays
-    print("\n4. Enter Holidays to Exclude:")
+    print("\n5. Enter Holidays to Exclude:")
     print("   (Enter dates separated by commas, or press Enter to skip)")
     print("   Example: 20.12.2025, 25.12.2025")
     
@@ -156,7 +172,7 @@ def get_user_input():
             except ValueError:
                 print(f"   Warning: Invalid date '{h}' ignored.")
     
-    return exam_type, year, start_date, end_date, holidays
+    return exam_type, semester_type, year, start_date, end_date, holidays
 
 def main():
     """Main CLI function"""
@@ -168,11 +184,12 @@ def main():
     
     try:
         # Get input
-        exam_type, year, start_date, end_date, holidays = get_user_input()
+        exam_type, semester_type, year, start_date, end_date, holidays = get_user_input()
         
         # Display summary
         print_header("SCHEDULING PARAMETERS")
         print(f"\n   Exam Type: {exam_type}")
+        print(f"   Semester Type: {semester_type}")
         print(f"   Year Group: {year}")
         print(f"   Start Date: {start_date}")
         print(f"   End Date: {end_date}")
@@ -193,11 +210,11 @@ def main():
         
         if exam_type == 'SEMESTER':
             schedule, violations = scheduler.schedule_semester_exams(
-                year, start_date, end_date, holidays
+                year, semester_type, start_date, end_date, holidays
             )
         else:
             schedule, violations = scheduler.schedule_internal_exams(
-                year, start_date, end_date, holidays
+                year, semester_type, start_date, end_date, holidays
             )
         
         # Create exam cycle and save

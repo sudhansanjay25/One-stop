@@ -51,26 +51,27 @@ class ExamScheduler:
         
         return available_dates
     
-    def get_subjects_for_year(self, year: int, exam_type: str) -> List[Dict]:
+    def get_subjects_for_year(self, year: int, exam_type: str, semester_type: str) -> List[Dict]:
         """
-        Fetch subjects for given year and exam type
+        Fetch subjects for given year, exam type, and semester type
         
         Args:
             year: Year group (1-4)
             exam_type: 'SEMESTER' or 'INTERNAL'
+            semester_type: 'ODD' or 'EVEN'
             
         Returns:
             List of subject dictionaries
         """
         query = '''
         SELECT subject_id, subject_code, subject_name, department, 
-               year, subject_type, exam_type, student_count
+               year, semester_type, subject_type, exam_type, student_count
         FROM subjects
-        WHERE year = ? AND (exam_type = ? OR exam_type = 'BOTH')
+        WHERE year = ? AND semester_type = ? AND (exam_type = ? OR exam_type = 'BOTH')
         ORDER BY subject_type DESC, department, subject_code
         '''
         
-        self.cursor.execute(query, (year, exam_type))
+        self.cursor.execute(query, (year, semester_type, exam_type))
         rows = self.cursor.fetchall()
         
         subjects = []
@@ -81,9 +82,10 @@ class ExamScheduler:
                 'subject_name': row[2],
                 'department': row[3],
                 'year': row[4],
-                'subject_type': row[5],
-                'exam_type': row[6],
-                'student_count': row[7]
+                'semester_type': row[5],
+                'subject_type': row[6],
+                'exam_type': row[7],
+                'student_count': row[8]
             })
         
         return subjects
@@ -154,13 +156,14 @@ class ExamScheduler:
         
         return True, ""
     
-    def schedule_semester_exams(self, year: int, start_date: str, end_date: str,
+    def schedule_semester_exams(self, year: int, semester_type: str, start_date: str, end_date: str,
                                holidays: List[str]) -> Tuple[List[Dict], List[Dict]]:
         """
-        Schedule semester exams for given year
+        Schedule semester exams for given year and semester type
         
         Args:
             year: Year group
+            semester_type: 'ODD' or 'EVEN'
             start_date: Start date (DD.MM.YYYY)
             end_date: End date (DD.MM.YYYY)
             holidays: List of holiday dates
@@ -175,7 +178,7 @@ class ExamScheduler:
             raise ValueError("No available dates for scheduling!")
         
         # Get subjects
-        subjects = self.get_subjects_for_year(year, 'SEMESTER')
+        subjects = self.get_subjects_for_year(year, 'SEMESTER', semester_type)
         
         if not subjects:
             raise ValueError(f"No semester subjects found for year {year}")
@@ -274,13 +277,14 @@ class ExamScheduler:
         
         return schedule, violations
     
-    def schedule_internal_exams(self, year: int, start_date: str, end_date: str,
+    def schedule_internal_exams(self, year: int, semester_type: str, start_date: str, end_date: str,
                                 holidays: List[str]) -> Tuple[List[Dict], List[Dict]]:
         """
-        Schedule internal exams for given year
+        Schedule internal exams for given year and semester type
         
         Args:
             year: Year group
+            semester_type: 'ODD' or 'EVEN'
             start_date: Start date (DD.MM.YYYY)
             end_date: End date (DD.MM.YYYY)
             holidays: List of holiday dates
@@ -295,7 +299,7 @@ class ExamScheduler:
             raise ValueError("No available dates for scheduling!")
         
         # Get subjects
-        subjects = self.get_subjects_for_year(year, 'INTERNAL')
+        subjects = self.get_subjects_for_year(year, 'INTERNAL', semester_type)
         
         if not subjects:
             raise ValueError(f"No internal subjects found for year {year}")
