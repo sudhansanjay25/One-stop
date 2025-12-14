@@ -22,6 +22,83 @@ def print_schedule_table(schedule, exam_type):
         print("   No exams scheduled.")
         return
     
+    # Check if internal exam has dual sessions
+    sessions_used = set(item['session'] for item in schedule)
+    is_internal_dual = exam_type == 'INTERNAL' and 'FN' in sessions_used and 'AN' in sessions_used
+    
+    if is_internal_dual:
+        # Print two separate matrix tables for FN and AN
+        print_internal_matrix_table(schedule, 'FN')
+        print_internal_matrix_table(schedule, 'AN')
+    else:
+        # Original list format for semester or single-session internal
+        print_schedule_list_format(schedule, exam_type)
+
+def print_internal_matrix_table(schedule, session):
+    """Print internal exam schedule in matrix format (dates as columns, depts as rows)"""
+    # Filter schedule by session
+    session_schedule = [item for item in schedule if item['session'] == session]
+    
+    if not session_schedule:
+        return
+    
+    # Get unique dates and departments
+    dates = sorted(set(item['date'] for item in session_schedule), 
+                   key=lambda x: datetime.strptime(x, '%d.%m.%Y'))
+    departments = sorted(set(item['department'] for item in session_schedule))
+    
+    # Create mapping: (dept, date) -> subject
+    schedule_map = {}
+    for item in session_schedule:
+        key = (item['department'], item['date'])
+        schedule_map[key] = f"{item['subject_code']}\n{item['subject_name']}"
+    
+    # Print session header
+    session_time = config.SESSION_TIMINGS['FN_INTERNAL'] if session == 'FN' else config.SESSION_TIMINGS['AN_INTERNAL']
+    print(f"\n{'='*70}")
+    print(f"  {session} SESSION ({session_time})")
+    print(f"{'='*70}")
+    
+    # Calculate column width
+    col_width = max(15, (70 - 10) // len(dates))
+    
+    # Print header row with dates
+    print(f"\n{'Dept':<10}", end='')
+    for date in dates:
+        # Show date and day of week
+        date_obj = datetime.strptime(date, '%d.%m.%Y')
+        date_short = date_obj.strftime('%d.%m.%Y')
+        day_name = date_obj.strftime('%A')
+        print(f"{date_short:^{col_width}}", end='')
+    print()
+    print(f"{'/ Day':<10}", end='')
+    for date in dates:
+        date_obj = datetime.strptime(date, '%d.%m.%Y')
+        day_name = date_obj.strftime('%A')
+        print(f"{day_name:^{col_width}}", end='')
+    print()
+    print("-" * 70)
+    
+    # Print each department row
+    for dept in departments:
+        print(f"{dept:<10}", end='')
+        for date in dates:
+            key = (dept, date)
+            if key in schedule_map:
+                subject_info = schedule_map[key]
+                # Show subject name instead of code
+                subject_name = subject_info.split('\n')[1]
+                # Truncate if too long
+                if len(subject_name) > col_width - 2:
+                    subject_name = subject_name[:col_width-5] + "..."
+                print(f"{subject_name:^{col_width}}", end='')
+            else:
+                print(f"{'-':^{col_width}}", end='')
+        print()
+    print("-" * 70)
+
+def print_schedule_list_format(schedule, exam_type):
+    """Print schedule in original list format"""
     # Group by date
     schedule_by_date = {}
     for item in schedule:
