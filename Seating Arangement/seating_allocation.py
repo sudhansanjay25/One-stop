@@ -25,7 +25,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
 class SeatingAllocationSystem:
-    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1, internal_number=1):
+    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1, internal_number=1, header_date_text=None, **kwargs):
         """Initialize the seating allocation system"""
         # Read halls data with columns information
         self.halls_df = pd.read_csv(halls_file)
@@ -48,6 +48,11 @@ class SeatingAllocationSystem:
         self.year = year  # Academic year (1, 2, 3, or 4)
         self.internal_number = internal_number  # 1 or 2 (only for Internal exams)
         self.generation_date = datetime.now().strftime('%Y-%m-%d')
+        # Optional override for date display inside PDFs (e.g., "15.12.2025 – 22.12.2025")
+        # Allow backward-compat alias if callers accidentally pass header_date__text
+        if header_date_text is None and 'header_date__text' in kwargs:
+            header_date_text = kwargs.get('header_date__text')
+        self.header_date_text = header_date_text
         
     def allocate_seats_mixed_department(self):
         """
@@ -542,8 +547,8 @@ class SeatingAllocationSystem:
         
         # Add date, session, and hall info
         from datetime import date
-        today = date.today().strftime('%d-%m-%Y')
-        fig.text(0.1, 0.82, f'Date:{today}', fontsize=10)
+        header_date = self.header_date_text if self.header_date_text else date.today().strftime('%d-%m-%Y')
+        fig.text(0.1, 0.82, f'Date: {header_date}', fontsize=10)
         if self.exam_type == 'Internal':
             fig.text(0.5, 0.82, f'Session: Morning', ha='center', fontsize=10)
         else:
@@ -722,7 +727,8 @@ class SeatingAllocationSystem:
         elements.append(Paragraph("Hyderabad - 43", sub_header_style))
         elements.append(Paragraph("[An Autonomous Institution]", italic_style))
         elements.append(Paragraph("SEATING ARRANGEMENT - FACULTY SUMMARY", title_style))
-        elements.append(Paragraph(f"Date: {self.generation_date} | Session: {self.session}", sub_header_style))
+        date_text = self.header_date_text if self.header_date_text else self.generation_date
+        elements.append(Paragraph(f"Date: {date_text} | Session: {self.session}", sub_header_style))
         elements.append(Spacer(1, 0.3*inch))
         
         # Overall Statistics
