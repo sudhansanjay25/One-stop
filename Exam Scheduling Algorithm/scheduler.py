@@ -304,12 +304,43 @@ class ExamScheduler:
         if not subjects:
             raise ValueError(f"No internal subjects found for year {year}")
         
+        # Group subjects by department to find max subjects per department
+        dept_subjects = {}
+        for subject in subjects:
+            dept = subject['department']
+            if dept not in dept_subjects:
+                dept_subjects[dept] = []
+            dept_subjects[dept].append(subject)
+        
+        # Find maximum subjects in any single department
+        max_subjects_per_dept = max(len(subjs) for subjs in dept_subjects.values())
+        
         print(f"\n📊 Scheduling Analysis:")
         print(f"   Available dates: {len(available_dates)}")
-        print(f"   Subjects to schedule: {len(subjects)}")
+        print(f"   Total subjects: {len(subjects)}")
+        print(f"   Max subjects per department: {max_subjects_per_dept}")
+        for dept, subjs in sorted(dept_subjects.items()):
+            print(f"      {dept}: {len(subjs)} subjects")
         
-        if len(subjects) > len(available_dates):
-            print(f"   ⚠️  WARNING: Not enough dates! Need to extend date range.")
+        # Determine scheduling strategy based on max subjects per department
+        min_days_needed = (max_subjects_per_dept + 1) / 2  # Round up for minimum days
+        
+        if len(available_dates) < min_days_needed:
+            raise ValueError(
+                f"Cannot schedule - insufficient dates. "
+                f"Need at least {int(min_days_needed)} days for {max_subjects_per_dept} subjects "
+                f"(max in single department). Only {len(available_dates)} days available."
+            )
+        
+        # Decide whether to use single or dual sessions based on max subjects per dept
+        use_dual_sessions = len(available_dates) < max_subjects_per_dept
+        
+        if use_dual_sessions:
+            print(f"   ℹ️  Using both FN and AN sessions (2 exams per day)")
+            sessions = ['FN', 'AN']
+        else:
+            print(f"   ℹ️  Using only FN session (1 exam per day)")
+            sessions = ['FN']
         
         # Build conflict graph
         conflicts = self.build_conflict_graph(subjects)
@@ -317,7 +348,13 @@ class ExamScheduler:
         # Initialize schedule and tracking
         schedule = []
         violations = []
-        date_usage = {}  # Track which dates are used per department
+        dept_date_session_usage = {}  # Track which date+session combinations are used per department
+        
+        # Create slots
+        slots = []
+        for date in available_dates:
+            for session in sessions:
+                slots.append({'date': date, 'session': session})
         
         # Schedule each subject
         for subject in subjects:
@@ -326,21 +363,21 @@ class ExamScheduler:
             
             scheduled = False
             
-            # Find first available date for this department
-            for date in available_dates:
-                date_key = f"{dept}_{date}"
+            # Find first available slot for this department
+            for slot in slots:
+                slot_key = f"{dept}_{slot['date']}_{slot['session']}"
                 
-                if date_key not in date_usage:
-                    # Assign to this date
-                    date_usage[date_key] = subject_id
+                if slot_key not in dept_date_session_usage:
+                    # Assign to this slot
+                    dept_date_session_usage[slot_key] = subject_id
                     
                     schedule.append({
                         'subject_id': subject_id,
                         'subject_code': subject['subject_code'],
                         'subject_name': subject['subject_name'],
                         'department': dept,
-                        'date': date,
-                        'session': 'SINGLE',
+                        'date': slot['date'],
+                        'session': slot['session'],
                         'subject_type': subject['subject_type'],
                         'student_count': subject['student_count']
                     })
@@ -353,7 +390,7 @@ class ExamScheduler:
                     'subject_id': subject_id,
                     'subject_code': subject['subject_code'],
                     'violation_type': 'NO_SLOT_AVAILABLE',
-                    'description': 'Could not find available date',
+                    'description': 'Could not find available slot',
                     'severity': 'HIGH'
                 })
         

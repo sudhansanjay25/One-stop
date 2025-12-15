@@ -4,13 +4,14 @@ Configuration constants for Exam Scheduling System
 
 # Exam sessions
 SEMESTER_SESSIONS = ['FN', 'AN']
-INTERNAL_SESSIONS = ['SINGLE']
+INTERNAL_SESSIONS = ['FN', 'AN']  # Can use both sessions if needed
 
 # Session timings
 SESSION_TIMINGS = {
     'FN': '10:00 AM - 1:00 PM',
     'AN': '2:00 PM - 5:00 PM',
-    'SINGLE': '8:30 AM - 10:00 AM'
+    'FN_INTERNAL': '9:00 AM - 10:30 AM',
+    'AN_INTERNAL': '2:00 PM - 3:30 PM'
 }
 
 # Exam durations (in hours)
@@ -48,7 +49,7 @@ DEPARTMENTS = ['CSE', 'ECE', 'MECH']
 YEARS = [1, 2, 3, 4]
 
 # Days of week (for weekend detection)
-WEEKENDS = [5, 6]  # Saturday, Sunday (0=Monday, 6=Sunday)
+WEEKENDS = [6]  # Sunday only (0=Monday, 6=Sunday)
 
 # Status values
 STATUS_VALUES = {

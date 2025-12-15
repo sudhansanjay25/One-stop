@@ -25,7 +25,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
 class SeatingAllocationSystem:
-    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1, internal_number=1):
+    def __init__(self, halls_file, students_file, teachers_file, session='FN', exam_type='Internal', year=1, internal_number=1, header_date_text=None, **kwargs):
         """Initialize the seating allocation system"""
         # Read halls data with columns information
         self.halls_df = pd.read_csv(halls_file)
@@ -48,6 +48,11 @@ class SeatingAllocationSystem:
         self.year = year  # Academic year (1, 2, 3, or 4)
         self.internal_number = internal_number  # 1 or 2 (only for Internal exams)
         self.generation_date = datetime.now().strftime('%Y-%m-%d')
+        # Optional override for date display inside PDFs (e.g., "15.12.2025 – 22.12.2025")
+        # Allow backward-compat alias if callers accidentally pass header_date__text
+        if header_date_text is None and 'header_date__text' in kwargs:
+            header_date_text = kwargs.get('header_date__text')
+        self.header_date_text = header_date_text
         
     def allocate_seats_mixed_department(self):
         """
@@ -73,6 +78,38 @@ class SeatingAllocationSystem:
         self._create_hall_wise_summary()
         
         return self.allocations
+
+    def _get_hall_benches(self, hall_idx):
+        """Return normalized bench count for a hall.
+        If halls.csv stores capacity as total seats for Internal exams, convert to benches.
+        Enforce 30–35 benches per user requirement when possible.
+        """
+        capacity_raw = int(self.halls_df.loc[hall_idx, 'capacity'])
+        # Normalize: for Internal, capacity may be seats. Convert seats->benches if suspiciously high.
+        if self.exam_type == 'Internal':
+            # If capacity looks like seats (e.g., >= 50), treat as seats and halve
+            benches = max(1, capacity_raw // 2) if capacity_raw >= 50 else capacity_raw
+        else:
+            benches = capacity_raw
+
+        # Clamp benches to 30–35 if outside reasonable range
+        if benches < 30:
+            benches = 30
+        elif benches > 35:
+            benches = 35
+        return benches
+
+    def _get_hall_columns(self, hall_no):
+        """Return columns for the hall, clamped between 4 and 6."""
+        try:
+            cols = int(self.halls_df[self.halls_df['hallno'] == hall_no]['Columns'].values[0])
+        except Exception:
+            cols = 4
+        if cols < 4:
+            cols = 4
+        elif cols > 6:
+            cols = 6
+        return cols
     
     def _allocate_sem_linear(self):
         """Allocate for SEM exam: 1 student per bench with randomization and min 2 depts per hall"""
@@ -102,7 +139,7 @@ class SeatingAllocationSystem:
         
         while total_allocated < total_students:
             hall_no = self.halls_df.loc[current_hall_idx, 'hallno']
-            hall_capacity = self.halls_df.loc[current_hall_idx, 'capacity']
+            hall_capacity = self._get_hall_benches(current_hall_idx)
             
             # Find available departments (prioritize ensuring min 2 depts per hall)
             available_depts = [dept for dept, ptr in dept_pointers.items() 
@@ -187,7 +224,7 @@ class SeatingAllocationSystem:
         # For Internal exams, capacity represents benches
         while total_allocated < total_students:
             hall_no = self.halls_df.loc[current_hall_idx, 'hallno']
-            hall_capacity = self.halls_df.loc[current_hall_idx, 'capacity']
+            hall_capacity = self._get_hall_benches(current_hall_idx)
             
             # Find available departments
             available_depts = [dept for dept, ptr in dept_pointers.items() 
@@ -296,7 +333,7 @@ class SeatingAllocationSystem:
         while total_allocated < total_students:
             # Get current hall info
             hall_no = self.halls_df.loc[current_hall_idx, 'hallno']
-            hall_capacity = self.halls_df.loc[current_hall_idx, 'capacity']
+            hall_capacity = self._get_hall_benches(current_hall_idx)
             
             # Try to allocate from current department
             dept = dept_list[current_dept_idx]
@@ -356,7 +393,7 @@ class SeatingAllocationSystem:
         
         for idx, student in students_sorted.iterrows():
             hall_no = self.halls_df.loc[current_hall_idx, 'hallno']
-            hall_capacity = self.halls_df.loc[current_hall_idx, 'capacity']
+            hall_capacity = self._get_hall_benches(current_hall_idx)
             
             allocations.append({
                 'Hall No': hall_no,
@@ -411,10 +448,12 @@ class SeatingAllocationSystem:
     def convert_to_2d_layout(self, hall_no):
         """Convert student list to 2D grid layout using hall-specific columns"""
         # Get the number of columns for this specific hall
-        num_cols = self.halls_df[self.halls_df['hallno'] == hall_no]['Columns'].values[0]
+        num_cols = self._get_hall_columns(hall_no)
             
         hall_data = self.hall_wise_allocations[hall_no]
-        hall_capacity = self.halls_df[self.halls_df['hallno'] == hall_no]['capacity'].values[0]
+        # Use normalized benches for layout rows
+        hall_idx = int(self.halls_df[self.halls_df['hallno'] == hall_no].index[0])
+        hall_capacity = self._get_hall_benches(hall_idx)
         
         if self.exam_type == 'SEM':
             # Semester Exam: 1 student per bench
@@ -480,7 +519,8 @@ class SeatingAllocationSystem:
         
         # Get hall info
         teacher = self.teacher_assignments.get(hall_no, "TBA")
-        hall_capacity = self.halls_df[self.halls_df['hallno'] == hall_no]['capacity'].values[0]
+        hall_idx = int(self.halls_df[self.halls_df['hallno'] == hall_no].index[0])
+        hall_capacity = self._get_hall_benches(hall_idx)
         hall_data = self.hall_wise_allocations[hall_no]
         occupied = len(hall_data)
         
@@ -507,8 +547,8 @@ class SeatingAllocationSystem:
         
         # Add date, session, and hall info
         from datetime import date
-        today = date.today().strftime('%d-%m-%Y')
-        fig.text(0.1, 0.82, f'Date:{today}', fontsize=10)
+        header_date = self.header_date_text if self.header_date_text else date.today().strftime('%d-%m-%Y')
+        fig.text(0.1, 0.82, f'Date: {header_date}', fontsize=10)
         if self.exam_type == 'Internal':
             fig.text(0.5, 0.82, f'Session: Morning', ha='center', fontsize=10)
         else:
@@ -687,14 +727,15 @@ class SeatingAllocationSystem:
         elements.append(Paragraph("Hyderabad - 43", sub_header_style))
         elements.append(Paragraph("[An Autonomous Institution]", italic_style))
         elements.append(Paragraph("SEATING ARRANGEMENT - FACULTY SUMMARY", title_style))
-        elements.append(Paragraph(f"Date: {self.generation_date} | Session: {self.session}", sub_header_style))
+        date_text = self.header_date_text if self.header_date_text else self.generation_date
+        elements.append(Paragraph(f"Date: {date_text} | Session: {self.session}", sub_header_style))
         elements.append(Spacer(1, 0.3*inch))
         
         # Overall Statistics
         total_students = len(self.allocations)
         halls_used = len(self.hall_wise_allocations)
-        total_capacity = sum([self.halls_df[self.halls_df['hallno'] == h]['capacity'].values[0] 
-                             for h in self.hall_wise_allocations.keys()])
+        total_capacity = sum([self._get_hall_benches(int(self.halls_df[self.halls_df['hallno'] == h].index[0]))
+                     for h in self.hall_wise_allocations.keys()])
         
         stats_data = [
             ['Overall Statistics', ''],
@@ -729,7 +770,8 @@ class SeatingAllocationSystem:
         
         for hall_no in non_empty_halls:
             hall_data = self.hall_wise_allocations[hall_no]
-            capacity = self.halls_df[self.halls_df['hallno'] == hall_no]['capacity'].values[0]
+            hall_idx = int(self.halls_df[self.halls_df['hallno'] == hall_no].index[0])
+            capacity = self._get_hall_benches(hall_idx)
             occupied = len(hall_data)
             
             # Get department counts - use compact format
@@ -903,7 +945,8 @@ class SeatingAllocationSystem:
         
         print("\nHall utilization:")
         for hall_no in sorted(self.allocations['Hall No'].unique()):
-            hall_capacity = self.halls_df[self.halls_df['hallno'] == hall_no]['capacity'].values[0]
+            hall_idx = int(self.halls_df[self.halls_df['hallno'] == hall_no].index[0])
+            hall_capacity = self._get_hall_benches(hall_idx)
             allocated = len(self.allocations[self.allocations['Hall No'] == hall_no])
             utilization = (allocated / hall_capacity) * 100
             print(f"  Hall {hall_no:2d}: {allocated:2d}/{hall_capacity:2d} seats ({utilization:5.1f}% utilized)")

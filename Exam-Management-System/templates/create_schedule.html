@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Exam Schedule</title>
+</head>
+<body>
+
+<h2>Create Exam Schedule</h2>
+
+<form method="post">
+
+<label>Academic Year</label><br>
+<input type="text" name="academic_year" placeholder="2024-2025" required><br><br>
+
+<label>Exam Type</label><br>
+<select name="exam_type" required>
+    <option value="INTERNAL1">Internal 1</option>
+    <option value="INTERNAL2">Internal 2</option>
+    <option value="SEM">Semester</option>
+</select><br><br>
+
+<label>Year</label><br>
+<select name="year" required>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+</select><br><br>
+
+<label>Semester</label><br>
+<select name="semester" required>
+    <option value="ODD">Odd</option>
+    <option value="EVEN">Even</option>
+</select><br><br>
+
+<label>Start Date</label><br>
+<input type="date" name="start_date" required><br><br>
+
+<label>End Date</label><br>
+<input type="date" name="end_date" required><br><br>
+
+<button type="submit">Create Schedule</button>
+
+</form>
+
+<br>
+<a href="/coe">Back</a>
+
+</body>
+</html>

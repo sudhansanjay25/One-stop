@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>COE Dashboard</title>
+</head>
+<body>
+
+<h2>Controller of Examinations Dashboard</h2>
+
+<a href="/coe/create-schedule">Create Exam Schedule</a>
+<br><br>
+
+<h3>Created Exam Schedules</h3>
+
+{% if schedules %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Academic Year</th>
+        <th>Exam Type</th>
+        <th>Year</th>
+        <th>Semester</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+    </tr>
+    {% for s in schedules %}
+    <tr>
+        <td>{{ s.academic_year }}</td>
+        <td>{{ s.exam_type }}</td>
+        <td>{{ s.year }}</td>
+        <td>{{ s.semester }}</td>
+        <td>{{ s.start_date }}</td>
+        <td>{{ s.end_date }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No schedules created yet.</p>
+{% endif %}
+
+<br>
+<a href="/logout">Logout</a>
+
+</body>
+</html>
