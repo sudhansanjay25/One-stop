@@ -8,8 +8,11 @@ import os
 from datetime import datetime
 from scheduler import ExamScheduler
 from pdf_generator import generate_schedule_pdf
-from seating_integration import run_seating_allocation_for_schedule
 import config
+try:
+    from seating_integration import generate_seating_from_schedule
+except Exception:
+    generate_seating_from_schedule = None
 
 def print_header(title):
     """Print formatted header"""
@@ -337,17 +340,6 @@ def main():
         print(f"   Schedule saved to database (Cycle ID: {cycle_id})")
         print("="*70)
         
-        # Generate seating allocations (per date+session scope)
-        print("\n   Generating seating allocations...")
-        try:
-            generated_pdfs = run_seating_allocation_for_schedule(schedule, exam_type, year)
-            print(f"   ✅ Seating allocations created for {len(generated_pdfs)} slot(s)")
-            for (student_pdf, faculty_pdf) in generated_pdfs:
-                print(f"      Student PDF: {student_pdf}")
-                print(f"      Faculty PDF: {faculty_pdf}")
-        except Exception as seat_err:
-            print(f"   ⚠️  Seating allocation failed: {seat_err}")
-
         # Generate PDF
         print("\n   Generating PDF...")
         try:
@@ -360,6 +352,21 @@ def main():
         except Exception as pdf_error:
             print(f"   ⚠️  PDF generation failed: {pdf_error}")
             print("   Schedule is still saved in database.")
+
+        # Generate seating PDFs via external seating system
+        try:
+            print("\n   Generating seating PDFs (per date/session)...")
+            if generate_seating_from_schedule is None:
+                print("   ℹ️  seating_integration.py not available; skipped seating PDFs.")
+            else:
+                si_results = generate_seating_from_schedule(schedule, exam_type, year)
+                if si_results:
+                    for r in si_results:
+                        print(f"      ✓ {r['date']} {r['session']}: {r['total_students']} students")
+                else:
+                    print("   ℹ️  No seating PDFs generated.")
+        except Exception as e:
+            print(f"   ⚠️  Seating integration failed: {e}")
         
     except ValueError as e:
         print(f"\n   ❌ Error: {e}")
