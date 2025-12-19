@@ -498,7 +498,7 @@ class ExamScheduler:
         INSERT INTO exam_cycles (exam_type, year_group, start_date, end_date, 
                                 created_date, status)
         VALUES (?, ?, ?, ?, ?, ?)
-        ''', (exam_type, year, start_date, end_date, created_date, 'COMPLETED'))
+        ''', (exam_type, year, start_date, end_date, created_date, 'ACTIVE'))
         
         self.conn.commit()
         return self.cursor.lastrowid

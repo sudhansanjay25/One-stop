@@ -13,7 +13,7 @@ import numpy as np
 import random
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.backends.backend_pdf import PdfPages
@@ -96,7 +96,7 @@ class SeatingAllocationSystem:
         
         # Load students based on exam type
         if self.exam_type == 'SEMESTER' and self.exam_date:
-            # NEW: For SEM exams, get students based on scheduled subjects for this date+session
+            # For SEM exams, get students based on scheduled subjects for this date+session
             students_query = '''
                 SELECT DISTINCT 
                     s.reg_no as "Register Number", 
@@ -148,8 +148,26 @@ class SeatingAllocationSystem:
             
             self.students_df = pd.DataFrame(filtered_students)
             
+        elif self.exam_type == 'Internal' and self.exam_date:
+            # For Internal exams, get students enrolled in subjects for this session
+            # NO ARREAR checking - only students enrolled in subjects scheduled for this session
+            students_query = '''
+                SELECT DISTINCT 
+                    s.student_id,
+                    s.reg_no as "Register Number", 
+                    s.name as "Name", 
+                    s.department as "Department",
+                    s.year as "Student Year"
+                FROM students s
+                JOIN student_subjects ss ON s.student_id = ss.student_id
+                JOIN schedules sch ON ss.subject_id = sch.subject_id
+                WHERE sch.session = ? AND s.year = ? AND s.active = 1
+                ORDER BY s.department, s.reg_no
+            '''
+            self.students_df = pd.read_sql_query(students_query, conn, params=(self.session, year))
+            
         else:
-            # INTERNAL: Use old logic (all year students, no arrears)
+            # Fallback: Load all students for the year (old internal logic)
             students_query = '''
                 SELECT DISTINCT 
                     s.reg_no as "Register Number", 
@@ -1615,49 +1633,199 @@ def manage_hall_selection(halls_df, total_students, exam_type):
     return selected_halls
 
 
+def create_internal_schedule(year, semester_type, internal_number):
+    """Create internal exam schedule with date-based slots (not department-based)"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Create exam cycle
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    cursor.execute('''
+        INSERT INTO exam_cycles (exam_type, year_group, start_date, end_date, created_date, status)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('INTERNAL', year, current_date, current_date, current_date, 'ACTIVE'))
+    cycle_id = cursor.lastrowid
+    
+    # Get all subjects for this year and semester
+    cursor.execute('''
+        SELECT subject_id, subject_code, subject_name, department
+        FROM subjects
+        WHERE year = ? AND semester_type = ? AND exam_type IN ('BOTH', 'INTERNAL')
+        ORDER BY subject_code
+    ''', (year, semester_type))
+    subjects = cursor.fetchall()
+    
+    if not subjects:
+        print(f"\n❌ No subjects found for Year {year} {semester_type} semester")
+        conn.close()
+        return None
+    
+    # Ask for number of days/slots
+    print(f"\nTotal subjects to schedule: {len(subjects)}")
+    print("How many days/slots do you want to spread the exams across?")
+    while True:
+        try:
+            num_slots = int(input("Enter number of slots (1-10): ").strip())
+            if 1 <= num_slots <= 10:
+                break
+            else:
+                print("Please enter a number between 1 and 10")
+        except ValueError:
+            print("Please enter a valid number")
+    
+    # Distribute subjects evenly across slots
+    subjects_per_slot = len(subjects) // num_slots
+    remainder = len(subjects) % num_slots
+    
+    slot_dates = []
+    base_date = datetime.now()
+    for i in range(num_slots):
+        # Generate dates (skip Sundays)
+        exam_date = base_date
+        while exam_date.weekday() == 6:  # Skip Sundays
+            exam_date += timedelta(days=1)
+        slot_dates.append(exam_date.strftime('%d.%m.%Y'))
+        base_date = exam_date + timedelta(days=1)
+    
+    # Schedule subjects to dates
+    subject_index = 0
+    schedule_summary = {}
+    
+    for slot_num, slot_date in enumerate(slot_dates, 1):
+        # Calculate how many subjects for this slot
+        count = subjects_per_slot + (1 if slot_num <= remainder else 0)
+        slot_subjects = subjects[subject_index:subject_index + count]
+        subject_index += count
+        
+        session_name = f"SLOT{slot_num}"
+        schedule_summary[session_name] = {
+            'date': slot_date,
+            'subjects': len(slot_subjects)
+        }
+        
+        # Insert into schedules
+        for subject in slot_subjects:
+            cursor.execute('''
+                INSERT INTO schedules (cycle_id, subject_id, exam_date, session)
+                VALUES (?, ?, ?, ?)
+            ''', (cycle_id, subject[0], slot_date, session_name))
+    
+    conn.commit()
+    conn.close()
+    
+    print(f"\n✓ Internal {internal_number} schedule created:")
+    print(f"  • Semester: {semester_type}")
+    print(f"  • Total slots: {num_slots}")
+    for slot, info in schedule_summary.items():
+        print(f"    - {slot} ({info['date']}): {info['subjects']} subjects")
+    
+    return cycle_id
+
+
 def main_internal_exam():
-    """Handle Internal exam allocation (existing workflow)"""
+    """Handle Internal exam allocation (read from existing schedule)"""
     print("\n" + "=" * 60)
     print("INTERNAL EXAM - SEATING ALLOCATION")
     print("=" * 60)
     
-    # Get year selection
-    print("\nSelect Year:")
-    print("  1. First Year")
-    print("  2. Second Year")
-    print("  3. Third Year")
-    print("  4. Fourth Year")
-    year_input = input("\nEnter year (1/2/3/4) [default: 1]: ").strip()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
     
-    if year_input in ['1', '2', '3', '4']:
-        year = int(year_input)
-    else:
-        year = 1
+    # Step 1: Get available internal exam cycles
+    cursor.execute('''
+        SELECT DISTINCT ec.cycle_id, ec.year_group, ec.start_date, ec.end_date, 
+               ec.created_date, ec.status,
+               COUNT(DISTINCT sch.schedule_id) as schedule_count
+        FROM exam_cycles ec
+        LEFT JOIN schedules sch ON ec.cycle_id = sch.cycle_id
+        WHERE ec.exam_type = 'INTERNAL'
+        GROUP BY ec.cycle_id
+        ORDER BY ec.created_date DESC
+    ''')
+    cycles = cursor.fetchall()
+    
+    if not cycles:
+        print("\n❌ No internal exam cycles found!")
+        print("Please create a schedule first using main.py")
+        conn.close()
+        return
+    
+    print("\nAvailable Internal Exam Cycles:")
+    for idx, (cycle_id, year, start_date, end_date, created, status, sched_count) in enumerate(cycles, 1):
+        year_names = {1: "First", 2: "Second", 3: "Third", 4: "Fourth"}
+        print(f"{idx}. Cycle {cycle_id} - {year_names.get(year, f'Year {year}')} | {start_date} to {end_date} | {sched_count} schedules | Status: {status}")
+    
+    cycle_input = input(f"\nSelect cycle (1-{len(cycles)}): ").strip()
+    
+    if not cycle_input.isdigit() or int(cycle_input) < 1 or int(cycle_input) > len(cycles):
+        print("\n❌ Invalid cycle selection")
+        conn.close()
+        return
+    
+    selected_cycle = cycles[int(cycle_input) - 1]
+    cycle_id = selected_cycle[0]
+    year = selected_cycle[1]
     
     year_names = {1: "First", 2: "Second", 3: "Third", 4: "Fourth"}
-    print(f"\n✓ {year_names[year]} Year selected")
+    print(f"\n✓ {year_names.get(year, f'Year {year}')} Year cycle selected")
     
-    # Get internal exam number
-    internal_input = input("\nWhich Internal Exam? (1/2) [default: 1]: ").strip()
-    if internal_input in ['1', '2']:
-        internal_number = int(internal_input)
-    else:
-        internal_number = 1
+    # Step 2: Get available slots (dates/sessions) from this cycle
+    cursor.execute('''
+        SELECT DISTINCT sch.exam_date, sch.session,
+               COUNT(DISTINCT sub.subject_id) as subject_count,
+               COUNT(DISTINCT s.student_id) as student_count
+        FROM schedules sch
+        JOIN subjects sub ON sch.subject_id = sub.subject_id
+        LEFT JOIN student_subjects ss ON sub.subject_id = ss.subject_id
+        LEFT JOIN students s ON ss.student_id = s.student_id AND s.active = 1
+        WHERE sch.cycle_id = ?
+        GROUP BY sch.exam_date, sch.session
+        ORDER BY sch.exam_date, sch.session
+    ''', (cycle_id,))
+    slots = cursor.fetchall()
     
-    print(f"✓ Internal {internal_number} selected (Morning session)")
+    if not slots:
+        print("\n❌ No scheduled exams found in this cycle")
+        conn.close()
+        return
     
-    # Load data from database
-    conn = sqlite3.connect(DB_PATH)
+    print("\n" + "=" * 60)
+    print("SELECT SLOT FOR SEATING ALLOCATION")
+    print("=" * 60)
+    print("\nAvailable Slots:")
+    for idx, (exam_date, session, subj_count, stud_count) in enumerate(slots, 1):
+        print(f"{idx}. {exam_date} {session} - {subj_count} subjects, {stud_count} students")
+    
+    slot_input = input(f"\nSelect slot (1-{len(slots)}): ").strip()
+    
+    if not slot_input.isdigit() or int(slot_input) < 1 or int(slot_input) > len(slots):
+        print("\n❌ Invalid slot selection")
+        conn.close()
+        return
+    
+    selected_slot = slots[int(slot_input) - 1]
+    exam_date = selected_slot[0]
+    session = selected_slot[1]
+    slot_students = selected_slot[3]
+    
+    print(f"\n✓ Slot selected: {exam_date} {session} ({slot_students} students)")
+    
+    # Get students for this slot
+    cursor.execute('''
+        SELECT DISTINCT s.student_id, s.reg_no, s.name, s.department
+        FROM students s
+        JOIN student_subjects ss ON s.student_id = ss.student_id
+        JOIN schedules sch ON ss.subject_id = sch.subject_id
+        WHERE sch.cycle_id = ? AND sch.exam_date = ? AND sch.session = ? AND s.active = 1
+        ORDER BY s.department, s.reg_no
+    ''', (cycle_id, exam_date, session))
+    students = cursor.fetchall()
+    total_students = len(students)
+    
+    # Load halls and teachers
     halls_df = pd.read_sql_query("SELECT hall_name as hallno, capacity, columns FROM halls WHERE active = 1", conn)
     teachers_df = pd.read_sql_query("SELECT teacher_name as Name, department as Department FROM teachers WHERE active = 1", conn)
-    
-    # Get student count
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM students WHERE year = ? AND active = 1', (year,))
-    total_students = cursor.fetchone()[0]
     conn.close()
-    
-    print(f"\n✓ Total students: {total_students}")
     
     # Hall Selection
     print("\n" + "=" * 60)
@@ -1676,20 +1844,23 @@ def main_internal_exam():
     # Create allocation system
     system = SeatingAllocationSystem(
         use_database=True,
-        session='FN',
+        session=session,
         exam_type='Internal',
         year=year,
-        internal_number=internal_number,
+        internal_number=1,  # Not relevant when using existing schedule
         selected_halls=selected_halls,
-        selected_teachers=selected_teachers
+        selected_teachers=selected_teachers,
+        exam_date=exam_date
     )
     
     # Final confirmation
     print("\n" + "=" * 60)
     print("FINAL CONFIRMATION")
     print("=" * 60)
-    print(f"Year: {year_names[year]} Year")
-    print(f"Exam Type: Internal {internal_number} (Morning session)")
+    print(f"Year: {year_names.get(year, f'Year {year}')}")
+    print(f"Exam Date: {exam_date}")
+    print(f"Session: {session}")
+    print(f"Students: {total_students}")
     print(f"Mode: 2 students per bench")
     print(f"Selected Halls: {len(selected_halls)}")
     print(f"Selected Teachers: {len(selected_teachers)}")
@@ -1700,9 +1871,58 @@ def main_internal_exam():
         return
     
     # Generate allocation
-    print(f"\nGenerating seating arrangement for Year {year} - Internal {internal_number}...")
+    print(f"\nGenerating seating arrangement for {exam_date} {session}...")
     allocations = system.allocate_seats_mixed_department()
     system.assign_teachers()
+    
+    # Save to database
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    records_saved = 0
+    for _, alloc in system.allocations.iterrows():
+        try:
+            # Get student_id from reg_no
+            cursor.execute('SELECT student_id FROM students WHERE reg_no = ?', (alloc.get('Register Number'),))
+            student_result = cursor.fetchone()
+            if not student_result:
+                continue
+            student_id = student_result[0]
+            
+            # Get hall_id from hall_name
+            cursor.execute('SELECT hall_id FROM halls WHERE hall_name = ?', (alloc.get('Hall No') or alloc.get('Hall'),))
+            hall_result = cursor.fetchone()
+            hall_id = hall_result[0] if hall_result else None
+            
+            cursor.execute('''
+                INSERT INTO seating_allocations (
+                    cycle_id, exam_date, session, hall_id, hall_name, 
+                    student_id, reg_no, student_name, department,
+                    bench_number, seat_no, position, exam_type, allocation_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                cycle_id,
+                exam_date,
+                session,
+                hall_id,
+                alloc.get('Hall No') or alloc.get('Hall'),
+                student_id,
+                alloc.get('Register Number'),
+                alloc.get('Name'),
+                alloc.get('Department'),
+                alloc.get('Bench No') or alloc.get('Bench'),
+                str(alloc.get('Bench No') or alloc.get('Bench')) + alloc.get('Position', 'A'),
+                alloc.get('Position', 'A'),
+                'Internal',
+                datetime.now().strftime('%Y-%m-%d')
+            ))
+            records_saved += 1
+        except (sqlite3.IntegrityError, Exception) as e:
+            print(f"Warning: Could not save allocation: {e}")
+            pass
+    
+    conn.commit()
+    conn.close()
     
     # Generate PDFs
     student_pdf = system.generate_student_pdf()
@@ -1712,6 +1932,7 @@ def main_internal_exam():
     print("\n" + "=" * 60)
     print("ALLOCATION COMPLETE!")
     print("=" * 60)
+    print(f"\n✓ Saved {records_saved} seat allocations to database")
     print(f"\nGenerated Files:")
     print(f"  • Student PDF: {student_pdf}")
     print(f"  • Faculty PDF: {faculty_pdf}")

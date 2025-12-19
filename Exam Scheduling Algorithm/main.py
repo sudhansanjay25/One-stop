@@ -309,8 +309,27 @@ def get_user_input():
         else:
             print("   Invalid choice. Please enter 1 or 2.")
     
+    # Internal exam number (only for Internal exams)
+    internal_number = None
+    if exam_type == 'INTERNAL':
+        print("\n3. Select Internal Exam:")
+        print("   [1] Internal 1")
+        print("   [2] Internal 2")
+        
+        while True:
+            choice = input("\n   Enter choice (1/2): ").strip()
+            if choice in ['1', '2']:
+                internal_number = int(choice)
+                break
+            else:
+                print("   Invalid choice. Please enter 1 or 2.")
+        
+        step_num = 4
+    else:
+        step_num = 3
+    
     # Year group
-    print("\n3. Select Year Group:")
+    print(f"\n{step_num}. Select Year Group:")
     print("   [1] First Year")
     print("   [2] Second Year")
     print("   [3] Third Year")
@@ -325,7 +344,8 @@ def get_user_input():
             print("   Invalid choice. Please enter 1-4.")
     
     # Date range
-    print("\n4. Enter Exam Period:")
+    step_num += 1
+    print(f"\n{step_num}. Enter Exam Period:")
     
     today = datetime.now().date()
     one_year_later = datetime(today.year + 1, today.month, today.day).date()
@@ -386,7 +406,7 @@ def get_user_input():
     # Holidays - No longer prompted, defaults to empty list (only Sundays excluded)
     holidays = []
     
-    return exam_type, semester_type, year, start_date, end_date, holidays
+    return exam_type, semester_type, year, start_date, end_date, holidays, internal_number
 
 def main():
     """Main CLI function"""
@@ -398,12 +418,14 @@ def main():
     
     try:
         # Get input
-        exam_type, semester_type, year, start_date, end_date, holidays = get_user_input()
+        exam_type, semester_type, year, start_date, end_date, holidays, internal_number = get_user_input()
         
         # Display summary
         print_header("SCHEDULING PARAMETERS")
         print(f"\n   Exam Type: {exam_type}")
         print(f"   Semester Type: {semester_type}")
+        if internal_number:
+            print(f"   Internal Exam: Internal {internal_number}")
         print(f"   Year Group: {year}")
         print(f"   Start Date: {start_date}")
         print(f"   End Date: {end_date}")
@@ -432,7 +454,10 @@ def main():
             )
         
         # Display results
-        print_header(f"{exam_type} EXAM SCHEDULE - Year {year}")
+        schedule_title = f"{exam_type} EXAM SCHEDULE - Year {year}"
+        if internal_number:
+            schedule_title += f" - Internal {internal_number}"
+        print_header(schedule_title)
         print(f"\n   Total Exams Scheduled: {len(schedule)}")
         print(f"   Constraint Violations: {len(violations)}")
         

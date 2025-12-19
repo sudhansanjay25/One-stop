@@ -1,0 +1,13 @@
+# Core Dependencies
+reportlab
+pandas
+numpy
+Pillow
+
+# Hall Ticket Generation
+Flask
+WeasyPrint
+qrcode[pil]
+Jinja2
+pdfkit
+matplotlib
